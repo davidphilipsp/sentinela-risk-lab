@@ -1,0 +1,196 @@
+# =============================================================================
+# Sentinela Risk Lab — CSV DATA CONTRACTS
+# =============================================================================
+# Every CSV that enters the system is validated against this contract BEFORE any
+# number is computed. A contract defines:
+#   - columns: canonical name, type, whether it is required, accepted header aliases
+#   - constraints: min/max, allowed values (with value aliases), uniqueness key
+#   - row rules: SQL boolean expressions that every row must satisfy
+#
+# Severity:
+#   error   -> the row is invalid. Study behaviour is controlled by
+#              `on_contract_error` (fail = abort, drop = remove row and record it)
+#   warning -> the row is kept, the violation is counted and shown in the report
+#
+# Types: string | date | decimal | integer
+# Header matching is case-insensitive, ignores accents, spaces and punctuation.
+# =============================================================================
+
+version: "1.0.0"
+
+datasets:
+
+  # ---------------------------------------------------------------------------
+  activity:
+    description: >
+      Casino activity aggregated per day, player and provider (one row per
+      dia + player_id + provider_name). This is the only REQUIRED dataset.
+    required_dataset: true
+    key: [dia, player_id, provider_name]
+    columns:
+      dia:
+        type: date
+        required: true
+        aliases: [date, data, day, dt, data_aposta, activity_date]
+      player_id:
+        type: string
+        required: true
+        pii: true
+        aliases: [user_id, userid, id_jogador, id_player, customer_id, cliente_id, player]
+      provider_name:
+        type: string
+        required: true
+        aliases: [provider, provedor, fornecedor, vendor]
+      btag:
+        type: string
+        required: false
+        default: "(sem btag)"
+        aliases: [affiliate, afiliado, affiliate_id, tracking_tag, utm_source]
+      turnover:
+        type: decimal
+        required: true
+        min: 0
+        aliases: [valor_apostado, total_apostado, wager, stake, bet_amount, apostado]
+      ggr:
+        type: decimal
+        required: true
+        aliases: [gross_gaming_revenue, receita_bruta, resultado_casa]
+      total_apostas:
+        type: integer
+        required: true
+        min: 0
+        aliases: [bets, apostas, qtd_apostas, num_bets, bet_count, rounds, giros]
+      top_jogos:
+        type: string
+        required: false
+        aliases: [top_games, jogos]
+    row_rules:
+      - id: ggr_not_above_turnover
+        description: "GGR = apostado - pago; não pode ser maior que o apostado."
+        expr: "ggr <= turnover"
+        severity: warning
+      - id: bets_when_turnover
+        description: "Se houve turnover, deve haver pelo menos uma aposta."
+        expr: "NOT (turnover > 0 AND total_apostas = 0)"
+        severity: warning
+
+  # ---------------------------------------------------------------------------
+  games:
+    description: >
+      Optional. Activity per game. When present, the Games section uses it
+      directly (most precise). Otherwise games are derived from activity.top_jogos.
+    required_dataset: false
+    key: [dia, player_id, provider_name, game_name]
+    columns:
+      dia:
+        type: date
+        required: true
+        aliases: [date, data, day, dt]
+      player_id:
+        type: string
+        required: false
+        pii: true
+        default: "(agregado)"
+        aliases: [user_id, userid, id_jogador, customer_id]
+      provider_name:
+        type: string
+        required: false
+        default: "(sem provider)"
+        aliases: [provider, provedor, fornecedor]
+      game_name:
+        type: string
+        required: true
+        aliases: [game, jogo, nome_jogo, game_title]
+      turnover:
+        type: decimal
+        required: true
+        min: 0
+        aliases: [valor_apostado, wager, stake, apostado]
+      ggr:
+        type: decimal
+        required: true
+        aliases: [receita_bruta, resultado_casa]
+      total_apostas:
+        type: integer
+        required: false
+        default: 0
+        min: 0
+        aliases: [bets, apostas, rounds, giros]
+    row_rules:
+      - id: ggr_not_above_turnover
+        description: "GGR não pode ser maior que o apostado."
+        expr: "ggr <= turnover"
+        severity: warning
+
+  # ---------------------------------------------------------------------------
+  payments:
+    description: Optional. One row per payment transaction (deposit or withdrawal).
+    required_dataset: false
+    key: [transaction_id]
+    columns:
+      transaction_id:
+        type: string
+        required: false
+        aliases: [id, payment_id, id_transacao, txid]
+      paid_at:
+        type: date
+        required: true
+        aliases: [date, data, created_at, data_pagamento, payment_date, dia]
+      player_id:
+        type: string
+        required: true
+        pii: true
+        aliases: [user_id, userid, id_jogador, customer_id]
+      type:
+        type: string
+        required: true
+        aliases: [tipo, payment_type, kind, operation, operacao]
+        allowed_values:
+          deposit: [deposit, deposito, dep, d, cashin, cash_in, pix_in]
+          withdrawal: [withdrawal, withdraw, saque, w, cashout, cash_out, pix_out]
+      amount:
+        type: decimal
+        required: true
+        min: 0
+        aliases: [valor, value, amount_brl, montante]
+      status:
+        type: string
+        required: false
+        default: approved
+        aliases: [situacao, state, payment_status]
+        allowed_values:
+          approved: [approved, aprovado, success, successful, paid, pago, completed, concluido, done, ok]
+          pending: [pending, pendente, processing, processando, waiting]
+          rejected: [rejected, rejeitado, recusado, failed, falhou, declined, cancelled, canceled, cancelado, error, estornado, refunded]
+    row_rules:
+      - id: positive_amount
+        description: "Valor do pagamento deve ser maior que zero."
+        expr: "amount > 0"
+        severity: warning
+
+  # ---------------------------------------------------------------------------
+  clients:
+    description: Optional. One row per registered player.
+    required_dataset: false
+    key: [player_id]
+    columns:
+      player_id:
+        type: string
+        required: true
+        pii: true
+        aliases: [user_id, userid, id_jogador, customer_id]
+      created_at:
+        type: date
+        required: true
+        aliases: [signup_date, data_cadastro, registration_date, registered_at, cadastro]
+      kyc_status:
+        type: string
+        required: false
+        default: "(não informado)"
+        aliases: [kyc, status_kyc, verification_status]
+      btag:
+        type: string
+        required: false
+        default: "(sem btag)"
+        aliases: [affiliate, afiliado, affiliate_id, utm_source]
+    row_rules: []

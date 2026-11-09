@@ -1,0 +1,87 @@
+# =============================================================================
+# Sentinela Risk Lab — RISK RULES & INSIGHT THRESHOLDS
+# =============================================================================
+# All thresholds that drive player risk scoring and the narrative insights live
+# here. No number in the report is produced by an AI model: every flag and every
+# sentence is a deterministic function of the data + these parameters.
+# Change a threshold here -> the evidence JSON records the new rules hash.
+# =============================================================================
+
+version: "1.0.0"
+
+robust_statistics:
+  # Robust z-score = 0.6745 * (x - median) / MAD   (Iglewicz & Hoaglin)
+  # |z| >= 3.5 is the classical outlier cut-off.
+  # Player hold uses a SIZE-ADJUSTED deviation x = (hold - median) * sqrt(bets):
+  # the standard error of a hold shrinks with 1/sqrt(n), so lucky short sessions
+  # are not confused with true anomalies.
+  z_cutoff: 3.5
+  # Players need at least this turnover for their hold to be statistically
+  # meaningful (small samples have extreme holds by pure chance).
+  min_turnover_for_hold: 500
+  min_bets_for_hold: 200
+
+player_flags:
+  HIGH_EXPOSURE:
+    weight: 3
+    description: "Ganho líquido do player (–GGR) no topo da distribuição: exposição financeira da casa."
+    quantile: 0.99            # player_net >= p99 of player_net ...
+    min_player_net: 5000      # ... and at least this absolute amount
+  HOLD_OUTLIER_LOW:
+    weight: 2
+    description: "Hold do player anormalmente baixo vs. a população, ajustado pelo nº de apostas (z robusto <= -corte)."
+  BET_SIZE_OUTLIER:
+    weight: 1
+    description: "Aposta média anormalmente alta vs. a população (z robusto do log >= corte)."
+  BONUS_ABUSE_PATTERN:
+    weight: 2
+    description: "Turnover alto (topo da base OU muitas vezes o depósito), hold próximo de zero e vida curta: padrão compatível com rolagem de bônus."
+    turnover_quantile: 0.90
+    min_wager_multiple: 25     # alternative: turnover >= 25x approved deposits (needs payments.csv)
+    max_abs_hold: 0.01
+    max_active_days: 3
+  MULTI_PROVIDER_BURST:
+    weight: 1
+    description: "Muitos providers em poucos dias: padrão de varredura/exploração."
+    providers_quantile: 0.99
+    min_providers: 4
+    max_active_days: 2
+  # --- payment-based flags (only when payments.csv is supplied) -------------
+  WITHDRAWAL_GT_DEPOSIT:
+    weight: 2
+    description: "Saques aprovados muito acima dos depósitos aprovados no período."
+    ratio: 1.5
+    min_withdrawals: 1000
+  LOW_WAGER_CASHOUT:
+    weight: 2
+    description: "Depositou e sacou com pouco jogo (turnover < N x depósitos): indicador de AML."
+    max_turnover_to_deposit: 1.0
+    min_deposits: 500
+  FAST_CASHOUT:
+    weight: 1
+    description: "Primeiro saque até N dias após o primeiro depósito do período."
+    max_days: 1
+
+risk_tiers:            # score = sum of weights of the flags raised
+  alto: 5
+  medio: 3
+  baixo: 1
+
+insights:
+  provider_concentration_hhi_alert: 2500     # HHI (0-10000). >2500 = highly concentrated
+  provider_concentration_hhi_attention: 1500
+  top_provider_share_alert: 0.40
+  provider_hold_deviation_pp: 0.02           # provider hold vs overall, in absolute points (2 p.p.)
+  provider_min_share_for_hold_check: 0.02
+  top10_players_turnover_share_alert: 0.20
+  affiliate_risk_multiplier_alert: 2.0       # btag share of flagged players >= 2x overall
+  affiliate_min_players: 20
+  affiliate_low_hold: 0.01
+  game_min_turnover_for_hold_check: 1000
+  game_min_clusters: 30                      # min distinct players for a game's hold test
+  game_hold_tolerance_pp: 0.03               # plausible RTP spread between honest games (3 p.p.)
+  game_watch_z: 2.0                          # |z| beyond the band >= 2.0 -> watch list; >= z_cutoff -> alert
+  daily_hold_z_alert: 3.5
+  withdrawal_to_deposit_alert: 0.90
+  payment_approval_rate_attention: 0.85
+  coverage_tolerance: 0.0001                 # reconciliation tolerance (relative)

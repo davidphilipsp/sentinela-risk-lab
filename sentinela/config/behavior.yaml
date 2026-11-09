@@ -1,0 +1,141 @@
+# =============================================================================
+# Sentinela Risk Lab — PLAYER BEHAVIOR DEFINITIONS
+# =============================================================================
+# GENERAL + SPECIFIC:
+#   * SPECIFIC (fixed, in code): a library of betting-industry player FEATURES,
+#     computed per player (see "features" below / docs/BEHAVIOR.md).
+#   * GENERAL (this file): lifecycle stages, value tiers and named segments are
+#     plain rules over those features. Change your business definitions HERE —
+#     no code changes. A study can point to its own copy:  behavior: ../my-behavior.yaml
+#
+# Rule syntax ("when"): boolean expression over feature names, e.g.
+#     value_tier = 'high' AND days_since_last_activity BETWEEN 8 AND 30
+# Allowed: feature names, numbers, 'text', AND OR NOT IN IS NULL BETWEEN LIKE,
+#          = <> != < <= > >= + - * /, coalesce abs least greatest round lower upper.
+# Anything else is rejected with a clear message (protects the engine and
+# catches typos such as "depositss").
+#
+# !!! All values below are INDUSTRY DEFAULTS / ASSUMPTIONS, to be replaced by
+#     your team's definitions when they are ready. !!!
+# =============================================================================
+
+version: "1.0.0"
+
+# Recency is measured from the last day of the study period.
+reference: period_end
+
+# Brazilian paydays (assumption): salary around the 5th business day, advance ("vale") around the 20th.
+payday_windows: [[1, 10], [18, 22]]
+
+# -----------------------------------------------------------------------------
+# LIFECYCLE — ordered rules, FIRST match wins. Every player gets exactly one stage.
+# -----------------------------------------------------------------------------
+lifecycle:
+  - id: cadastrado_sem_ftd
+    label: "Cadastrado sem depósito"
+    when: "lifetime_deposit_count = 0 AND last_activity_date IS NULL"
+  - id: depositou_sem_jogar
+    label: "Depositou e não jogou"
+    when: "lifetime_deposit_count > 0 AND last_activity_date IS NULL"
+  - id: novo
+    label: "Novo (≤ 7 dias de casa)"
+    when: "tenure_days <= 7"
+  - id: ativo
+    label: "Ativo (jogou nos últimos 7 dias)"
+    when: "days_since_last_activity <= 7"
+  - id: esfriando
+    label: "Esfriando (8–14 dias sem jogar)"
+    when: "days_since_last_activity <= 14"
+  - id: em_risco
+    label: "Em risco (15–30 dias sem jogar)"
+    when: "days_since_last_activity <= 30"
+  - id: inativo
+    label: "Inativo (31–90 dias sem jogar)"
+    when: "days_since_last_activity <= 90"
+  - id: churn
+    label: "Churn (> 90 dias)"
+    when: "true"
+
+# -----------------------------------------------------------------------------
+# VALUE TIERS — no tiers defined by the business yet -> data-driven quantiles.
+# -----------------------------------------------------------------------------
+value_tiers:
+  metric: deposits              # any numeric feature: deposits, net_deposits, ggr, turnover, lifetime_deposits ...
+  fallback_metric: turnover     # used when payments.csv is not supplied
+  method: quantile              # quantile | fixed
+  quantile:                     # among players with metric > 0
+    high: 0.90                  # top 10%            -> high
+    medium: 0.60                # p60–p90 (next 30%) -> medium; rest > 0 -> low
+  fixed:                        # used when method: fixed (same unit as the metric)
+    high: 5000
+    medium: 500
+  zero_label: sem_valor         # metric = 0 or missing
+
+# -----------------------------------------------------------------------------
+# SUPPRESSION — players that must NEVER enter campaign lists (responsible gaming / compliance).
+# -----------------------------------------------------------------------------
+suppression:
+  when: "risk_tier = 'alto' OR kyc_status IN ('reprovado', 'rejected', 'bloqueado')"
+  label: "Supressão: risco alto ou KYC reprovado"
+
+# -----------------------------------------------------------------------------
+# SEGMENTS — named player groups (a player may belong to several).
+#   campaign: true      -> suppression applies; exportable as a CRM list
+#   control_group_pct   -> deterministic holdout (same player = same group on every run)
+# These are EXAMPLES of typical CRM groups. Replace with your own definitions.
+# -----------------------------------------------------------------------------
+segments:
+  - id: vip_ativo
+    label: "VIP ativo"
+    when: "value_tier = 'high' AND lifecycle = 'ativo'"
+    campaign: true
+    control_group_pct: 10
+  - id: anti_churn_high
+    label: "Anti-churn · alto valor"
+    when: "value_tier = 'high' AND lifecycle IN ('esfriando', 'em_risco')"
+    campaign: true
+    control_group_pct: 10
+  - id: anti_churn_medium
+    label: "Anti-churn · médio valor"
+    when: "value_tier = 'medium' AND lifecycle IN ('esfriando', 'em_risco')"
+    campaign: true
+    control_group_pct: 10
+  - id: reativacao
+    label: "Reativação (inativos com histórico)"
+    when: "lifecycle IN ('inativo', 'churn') AND lifetime_deposits >= 100"
+    campaign: true
+    control_group_pct: 10
+  - id: cadastro_sem_ftd
+    label: "Cadastro recente sem FTD"
+    when: "lifecycle = 'cadastrado_sem_ftd' AND days_since_signup <= 30"
+    campaign: true
+    control_group_pct: 10
+  - id: ftd_sem_redeposito
+    label: "Fez FTD e não redepositou"
+    when: "lifetime_deposit_count = 1 AND days_since_last_deposit > 7"
+    campaign: true
+    control_group_pct: 10
+  - id: depositante_payday
+    label: "Depositante de payday"
+    when: "deposit_count >= 2 AND payday_deposit_share >= 0.6"
+    campaign: true
+    control_group_pct: 10
+  - id: sacou_e_parou
+    label: "Sacou e parou de jogar"
+    when: "withdrawals > 0 AND days_since_last_activity > 7"
+    campaign: true
+    control_group_pct: 10
+  - id: risco_alto_monitorar
+    label: "Risco alto · monitoramento (não é campanha)"
+    when: "risk_tier = 'alto'"
+    campaign: false
+
+# -----------------------------------------------------------------------------
+# COHORTS
+# -----------------------------------------------------------------------------
+cohorts:
+  grain: month                  # month | week
+  retention_periods: 6          # cohort-relative periods shown in the retention matrix
+
+# Time from signup to first deposit, in buckets (upper bounds in days; last = "> previous").
+ftd_buckets: [0, 1, 3, 7, 30]

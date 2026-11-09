@@ -1,0 +1,44 @@
+# =============================================================================
+# Sentinela Risk Lab — STUDY FILE
+# One file = one analysis. Paths are relative to THIS file.
+# =============================================================================
+study:
+  title: "Meu Estudo Hipotético — Junho 2026"
+  subtitle: "Inteligência de risco · cálculo determinístico local"
+  author: ""
+  period:
+    start: 2026-06-01       # AAAA-MM-DD (obrigatório)
+    end: 2026-06-30         # AAAA-MM-DD (obrigatório)
+  currency: BRL
+
+inputs:                             # SOMENTE dados do cofre (regra de segurança)
+  activity:                         # OBRIGATÓRIO
+    vault: latest                   # latest = última ingestão desse dataset, ou um rótulo
+    decimal_separator: auto         # auto | "." | ","
+    # date_formats: ["%d/%m/%Y"]
+    # column_map:                   # seu cabeçalho -> coluna do contrato
+    #   "Data da Aposta": dia
+    #   "ID Usuario": player_id
+  # games:
+  #   vault: latest
+  # payments:
+  #   vault: latest
+  # clients:
+  #   vault: latest
+  # Antes:  sentinela ingest ~/Downloads/arquivo.csv --dataset activity
+
+sections: [executive, behavior, providers, players, affiliates, games, payments, clients, data_quality]
+
+on_contract_error: fail             # fail = aborta | drop = remove linhas inválidas (registrado)
+
+security:
+  home: ..                          # raiz do projeto: keyring (.sentinela/) e cofre (vault/)
+  # plaintext_inputs: false         # NUNCA ative em produção
+  # plaintext_outputs: false        # relatórios ficam cifrados no cofre (sentinela view / export)
+
+output:
+  formats: [html, pdf, json, csv]
+
+# rules: ../my-rules.yaml           # sobrescreve limiares de risco (opcional)
+# contracts: ../my-contracts.yaml   # sobrescreve contratos (opcional)
+# behavior: ../my-behavior.yaml     # suas definições de ciclo de vida, faixas e segmentos (opcional)

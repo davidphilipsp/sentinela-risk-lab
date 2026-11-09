@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ m.title }}</title>
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --brand:#0f766e; --brand-dark:#134e4a;
+          --navy:#0b1324; --red:#dc2626; --amber:#b45309; --soft:#f8fafc; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", "Liberation Sans", Arial, Helvetica, sans-serif; color: var(--ink);
+         margin: 0; font-size: 13px; line-height: 1.5; background: #fff; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 28px 48px; }
+  .cover { background: var(--navy); color: #fff; padding: 44px 28px 36px; }
+  .cover .wrap { padding-bottom: 0; }
+  .brand { letter-spacing: .28em; font-size: 11px; color: #5eead4; font-weight: bold; }
+  .cover h1 { font-size: 30px; margin: 14px 0 6px; line-height: 1.2; }
+  .cover .sub { color: #cbd5e1; margin: 0 0 18px; }
+  .meta { font-size: 11px; color: #94a3b8; }
+  .meta b { color: #e2e8f0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;
+           background: #134e4a; color: #99f6e4; margin-right: 6px; }
+  h2 { font-size: 20px; margin: 38px 0 4px; padding-top: 6px; border-top: 3px solid var(--brand); }
+  h3 { font-size: 14px; margin: 22px 0 6px; }
+  .lead { color: var(--muted); margin: 0 0 14px; }
+  .toc { columns: 2; font-size: 12px; padding-left: 18px; }
+  .toc a { color: var(--brand-dark); text-decoration: none; }
+  .howto { background: var(--navy); color: #e2e8f0; border-radius: 8px; padding: 16px 20px; margin: 22px 0; font-size: 12px; }
+  .howto b { color: #5eead4; }
+  .kpis { display: table; width: 100%; border-spacing: 8px; margin: 0 -8px; }
+  .kpi-row { display: table-row; }
+  .kpi { display: table-cell; background: var(--soft); border: 1px solid var(--line); border-radius: 8px;
+         padding: 12px 14px; width: 25%; vertical-align: top; }
+  .kpi .v { font-size: 19px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  table.t { width: 100%; border-collapse: collapse; margin: 8px 0 6px; font-size: 11.5px; }
+  table.t th { text-align: left; text-transform: uppercase; font-size: 9.5px; letter-spacing: .06em;
+               color: var(--muted); border-bottom: 2px solid var(--line); padding: 6px 6px; }
+  table.t td { border-bottom: 1px solid var(--line); padding: 5px 6px; vertical-align: top; }
+  table.t td.n, table.t th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.hl td { background: #fef2f2; }
+  tr.watch td { background: #fffbeb; }
+  .miudos { background: #f0fdfa; border-left: 4px solid var(--brand); padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+  .miudos b { color: var(--brand-dark); }
+  .flag { background: #fef2f2; border-left: 4px solid var(--red); padding: 8px 14px; margin: 8px 0; border-radius: 4px; }
+  .attn { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 8px 14px; margin: 8px 0; border-radius: 4px; }
+  .info { background: var(--soft); border-left: 4px solid #94a3b8; padding: 8px 14px; margin: 8px 0; border-radius: 4px; }
+  .callout { text-align: center; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 18px; margin: 18px 0; }
+  .callout .big { font-size: 34px; font-weight: bold; color: var(--brand-dark); }
+  ol.reads li { margin: 6px 0; }
+  .sev { font-size: 9.5px; font-weight: bold; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; margin-right: 6px; }
+  .sev-alerta { background: #fee2e2; color: var(--red); }
+  .sev-atencao { background: #fef3c7; color: var(--amber); }
+  .sev-info { background: #e2e8f0; color: #334155; }
+  .st { font-weight: bold; font-size: 10.5px; }
+  .st-PASS, .st-OK { color: var(--brand); }
+  .st-FALHA { color: var(--red); }
+  .st-ALERTA { color: var(--amber); }
+  .st-INFO { color: var(--muted); }
+  .chart { width: 100%; height: auto; margin: 6px 0 4px; }
+  .small { font-size: 11px; color: var(--muted); }
+  code { font-size: 10.5px; background: var(--soft); padding: 1px 4px; border-radius: 3px; word-break: break-all; }
+  td code { word-break: normal; white-space: nowrap; }
+  .skip { color: var(--muted); font-style: italic; }
+  @page { size: A4; margin: 14mm 12mm; }
+  @media print { h2 { page-break-after: avoid; } table.t tr { page-break-inside: avoid; } .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+{% set ex = r.executive.metrics %}
+{% set SEV = {'alerta': 'alerta', 'atencao': 'atenção', 'info': 'info'} %}
+{% macro insights_for(section) -%}
+  {% for i in e.insights if i.section == section and i.severity != 'info' %}
+    <div class="{{ 'flag' if i.severity == 'alerta' else 'attn' }}"><span class="sev sev-{{ i.severity }}">{{ SEV[i.severity] }}</span>{{ i.text }}</div>
+  {% endfor %}
+{%- endmacro %}
+{% macro miudos(section) -%}
+  {% if cfg[section] %}<div class="miudos"><b>Em miúdos.</b> {{ cfg[section].read_as }} {{ cfg[section].em_miudos }}</div>{% endif %}
+{%- endmacro %}
+
+<div class="cover"><div class="wrap">
+  <div class="brand">SENTINELA RISK LAB</div>
+  <h1>{{ m.title }}</h1>
+  <p class="sub">{{ m.subtitle }}</p>
+  <div class="meta">
+    <span class="badge">SEM IA</span><span class="badge">CÁLCULO LOCAL</span><span class="badge">IDs PSEUDONIMIZADOS</span>{% if m.encryption and 'AES' in m.encryption.inputs %}<span class="badge">COFRE AES-256</span>{% else %}<span class="badge" style="background:#7f1d1d;color:#fecaca">MODO TESTE · TEXTO PURO</span>{% endif %}<br><br>
+    <b>Período:</b> {{ m.period.start }} a {{ m.period.end }} ({{ m.period.days }} dias) ·
+    <b>Gerado em:</b> {{ m.generated_at }}{% if m.author %} · <b>Autor:</b> {{ m.author }}{% endif %}<br>
+    <b>Run ID:</b> {{ m.run_id[:16] }} · <b>Versão:</b> {{ m.version }} · <b>Regras:</b> v{{ m.rules_version }} · <b>Contratos:</b> v{{ m.contracts_version }}
+  </div>
+</div></div>
+
+<div class="wrap">
+  <h3>Índice</h3>
+  <ol class="toc">
+    <li><a href="#sumario">Sumário executivo</a></li>
+    {% for s in m.sections %}<li><a href="#{{ s }}">{{ cfg[s].title }}</a></li>{% endfor %}
+    <li><a href="#glossario">Glossário</a></li>
+    <li><a href="#metodologia">Metodologia e auditoria</a></li>
+  </ol>
+
+  <div class="howto">
+    <b>Como ler este relatório.</b> Todos os números vêm de cálculo determinístico local sobre os CSVs informados,
+    validados por contrato antes do uso. Tabelas e KPIs são <b>fatos</b>; blocos "Em miúdos" são <b>leitura editorial
+    fixa</b>; alertas são <b>regras com limiares explícitos</b> (rules.yaml). Nenhum modelo de IA participou.
+    <b>Hold</b> = GGR ÷ turnover. Flags de risco são sinais estatísticos para investigação, não prova de fraude.
+    Os mesmos arquivos + mesmas regras produzem exatamente os mesmos números (Run ID).
+  </div>
+
+  <h2 id="sumario">Sumário executivo</h2>
+  <p class="lead">O essencial do período em poucos números.</p>
+  <div class="kpis">
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Turnover</div><div class="v">{{ ex.turnover|money }}</div></div>
+      <div class="kpi"><div class="l">GGR</div><div class="v">{{ ex.ggr|money }}</div></div>
+      <div class="kpi"><div class="l">Hold</div><div class="v">{{ ex.hold|percent }}</div></div>
+      <div class="kpi"><div class="l">Players únicos</div><div class="v">{{ ex.players|number }}</div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="l">Apostas</div><div class="v">{{ ex.bets|number }}</div></div>
+      <div class="kpi"><div class="l">Aposta média</div><div class="v">{{ ex.avg_bet|money }}</div></div>
+      <div class="kpi"><div class="l">GGR médio / dia</div><div class="v">{{ ex.ggr_per_day|money }}</div></div>
+      <div class="kpi"><div class="l">Providers · btags</div><div class="v">{{ ex.providers }} · {{ ex.btags }}</div></div>
+    </div>
+  </div>
+
+  {% set crit = e.insights | selectattr('severity', 'ne', 'info') | list %}
+  <h3>Leituras críticas</h3>
+  {% if crit %}
+  <ol class="reads">{% for i in crit %}<li><span class="sev sev-{{ i.severity }}">{{ SEV[i.severity] }}</span>{{ i.text }}</li>{% endfor %}</ol>
+  {% else %}<p class="small">Nenhum alerta disparado pelas regras atuais.</p>{% endif %}
+
+  <div class="callout"><div class="small">Hold consolidado do período</div><div class="big">{{ ex.hold|percent }}</div>
+    <div class="small">{{ ex.ggr|money }} de GGR sobre {{ ex.turnover|money }} apostados</div></div>
+
+  {% if m.skipped_sections %}
+  <div class="info"><b>Seções não geradas:</b>
+    {% for s, why in m.skipped_sections.items() %}{{ cfg[s].title }} — {{ why }}{% if not loop.last %}; {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+{% for s in m.sections %}
+  {% if s == 'executive' %}
+  <h2 id="executive">{{ cfg.executive.title }}</h2>
+  <p class="lead">GGR diário (verde = casa ganhou, vermelho = casa perdeu).</p>
+  {{ chart.daily_ggr }}
+  <table class="t">
+    <tr><th>Indicador</th><th class="n">Valor</th><th>Indicador</th><th class="n">Valor</th></tr>
+    <tr><td>Turnover</td><td class="n">{{ ex.turnover|money }}</td><td>Turnover / player</td><td class="n">{{ ex.turnover_per_player|money }}</td></tr>
+    <tr><td>GGR</td><td class="n">{{ ex.ggr|money }}</td><td>GGR / player</td><td class="n">{{ ex.ggr_per_player|money }}</td></tr>
+    <tr><td>Hold</td><td class="n">{{ ex.hold|percent }}</td><td>Dias com dados</td><td class="n">{{ ex.active_days }} / {{ ex.period_days }}</td></tr>
+    <tr><td>Linhas analisadas</td><td class="n">{{ ex.rows|number }}</td><td>Tendência GGR/dia</td>
+        <td class="n">{% if r.executive.ggr_trend.slope_per_day is not none %}{{ r.executive.ggr_trend.slope_per_day|money }} (R² {{ r.executive.ggr_trend.r2|number(2) }}){% else %}–{% endif %}</td></tr>
+  </table>
+  {{ miudos('executive') }}
+  {{ insights_for('executive') }}
+  <h3>Série diária</h3>
+  <table class="t">
+    <tr><th>Dia</th><th class="n">Turnover</th><th class="n">GGR</th><th class="n">Hold</th><th class="n">z hold</th><th class="n">Players</th></tr>
+    {% for d in r.executive.daily %}
+    <tr{% if d.hold_z is not none and (d.hold_z > e.rules.insights.daily_hold_z_alert or d.hold_z < -e.rules.insights.daily_hold_z_alert) %} class="hl"{% endif %}>
+      <td>{{ d.dia }}</td><td class="n">{{ d.turnover|money }}</td><td class="n">{{ d.ggr|money }}</td>
+      <td class="n">{{ d.hold|percent }}</td><td class="n">{{ d.hold_z|number(2) }}</td><td class="n">{{ d.players|number }}</td></tr>
+    {% endfor %}
+  </table>
+
+  {% elif s == 'behavior' and r.behavior %}
+  {% set bh = r.behavior %}
+  <h2 id="behavior">{{ cfg.behavior.title }}</h2>
+  <p class="lead">{{ bh.universe|number }} players conhecidos (cadastro, jogo ou pagamento até {{ m.period.end }}) ·
+    definições behavior.yaml v{{ bh.config_version }} · recência medida a partir do fim do período.</p>
+  {{ miudos('behavior') }}
+  {{ insights_for('behavior') }}
+
+  <h3>Ciclo de vida</h3>
+  {{ chart.lifecycle }}
+  <table class="t">
+    <tr><th>Estágio</th><th class="n">Players</th><th class="n">% base</th><th class="n">Depósitos</th><th class="n">% dep.</th><th class="n">Turnover</th><th class="n">GGR</th><th class="n">Dep. históricos</th></tr>
+    {% for x in bh.lifecycle %}
+    <tr><td><b>{{ x.label }}</b><br><code>{{ x.lifecycle }}</code></td><td class="n">{{ x.players|number }}</td><td class="n">{{ x.share|percent }}</td>
+      <td class="n">{{ x.deposits|money }}</td><td class="n">{{ x.deposit_share|percent }}</td><td class="n">{{ x.turnover|money }}</td>
+      <td class="n">{{ x.ggr|money }}</td><td class="n">{{ x.lifetime_deposits|money }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h3>Faixas de valor</h3>
+  <p class="small">Métrica: <b>{{ bh.value_tiers.metric }}</b> · método: {{ bh.value_tiers.method }} ·
+    corte high ≥ {{ bh.value_tiers.high_threshold|number(2) }} · medium ≥ {{ bh.value_tiers.medium_threshold|number(2) }}
+    {% if bh.value_tiers.note %}<br>{{ bh.value_tiers.note }}{% endif %}</p>
+  <table class="t">
+    <tr><th>Faixa</th><th class="n">Players</th><th class="n">% base</th><th class="n">Depósitos</th><th class="n">% dep.</th><th class="n">GGR</th><th class="n">% GGR</th></tr>
+    {% for t in bh.value_tiers.tiers %}
+    <tr><td><b>{{ t.value_tier }}</b></td><td class="n">{{ t.players|number }}</td><td class="n">{{ t.share|percent }}</td>
+      <td class="n">{{ t.deposits|money }}</td><td class="n">{{ t.deposit_share|percent }}</td><td class="n">{{ t.ggr|money }}</td><td class="n">{{ t.ggr_share|percent }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h3>Matriz ciclo de vida × faixa de valor (players)</h3>
+  <table class="t">
+    <tr><th>Estágio</th>{% for t in bh.matrix_tiers %}<th class="n">{{ t }}</th>{% endfor %}</tr>
+    {% for row in bh.matrix %}
+    <tr><td>{{ row.label }}</td>{% for t in bh.matrix_tiers %}<td class="n">{{ row[t]|number }}</td>{% endfor %}</tr>
+    {% endfor %}
+  </table>
+
+  <h3>Segmentos</h3>
+  <p class="small">Supressão de campanhas: <code>{{ bh.suppression.rule }}</code> — {{ bh.suppression.players|number }} players.
+    Grupo de controle determinístico (mesmo player = mesmo grupo em toda execução). Listas completas em <code>tables/segments/</code>.</p>
+  <table class="t">
+    <tr><th>Segmento</th><th>Regra</th><th class="n">Players</th><th class="n">Suprim.</th><th class="n">Elegíveis</th><th class="n">Controle</th><th class="n">Dep. período</th><th class="n">Dep. históricos</th></tr>
+    {% for g in bh.segments %}
+    <tr><td><b>{{ g.label }}</b><br><code>{{ g.id }}</code>{% if not g.campaign %} <span class="sev sev-info">monitoramento</span>{% endif %}</td>
+      <td class="small"><code>{{ g.rule }}</code></td><td class="n">{{ g.players|number }}</td><td class="n">{{ g.suppressed|number }}</td>
+      <td class="n">{{ g.eligible|number }}</td><td class="n">{% if g.control_group_pct %}{{ g.control|number }} ({{ g.control_group_pct|number }}%){% else %}–{% endif %}</td>
+      <td class="n">{{ g.deposits|money }}</td><td class="n">{{ g.lifetime_deposits|money }}</td></tr>
+    {% endfor %}
+  </table>
+
+  {% if bh.cohorts.table %}
+  <h3>Coortes por {{ 'mês' if bh.cohorts.grain == 'month' else 'semana' }} de {{ 'cadastro' if bh.cohorts.basis == 'signup_date' else 'primeiro jogo' }}</h3>
+  <table class="t">
+    <tr><th>Coorte</th><th class="n">Players</th><th class="n">FTD</th><th class="n">Taxa FTD</th><th class="n">Mediana dias→FTD</th><th class="n">Ativos no período</th><th class="n">Líquido/player</th></tr>
+    {% for c in bh.cohorts.table %}
+    <tr><td>{{ c.cohort }}</td><td class="n">{{ c.players|number }}</td><td class="n">{{ c.ftd|number }}</td><td class="n">{{ c.ftd_rate|percent }}</td>
+      <td class="n">{{ c.median_days_to_ftd|number(1) }}</td><td class="n">{{ c.active_in_period|number }} ({{ c.active_rate|percent }})</td><td class="n">{{ c.net_per_player|money }}</td></tr>
+    {% endfor %}
+  </table>
+  <h3>Retenção (% da coorte que jogou em cada {{ 'mês' if bh.cohorts.grain == 'month' else 'semana' }} após entrar)</h3>
+  <table class="t">
+    <tr><th>Coorte</th><th class="n">Players</th>{% for k in range(bh.cohorts.periods) %}<th class="n">+{{ k }}</th>{% endfor %}</tr>
+    {% for c in bh.cohorts.retention %}
+    <tr><td>{{ c.cohort }}</td><td class="n">{{ c.players|number }}</td>
+      {% for k in range(bh.cohorts.periods) %}{% set v = c['p' ~ k] %}
+      <td class="n"{% if v is not none %} style="background: rgba(15,118,110,{{ '%.2f'|format(v|float * 0.55) }})"{% endif %}>{{ v|percent(0) if v is not none else '' }}</td>
+      {% endfor %}</tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if bh.rhythm.day_of_month %}
+  <h3>Ritmo de depósitos</h3>
+  <p class="small">Depósitos aprovados por dia do mês. Janelas de payday: {% for w in bh.rhythm.payday_windows %}{{ w[0] }}–{{ w[1] }}{% if not loop.last %}, {% endif %}{% endfor %}
+    · {{ bh.rhythm.payday_share|percent }} dos depósitos em {{ bh.rhythm.payday_calendar_share|percent }} dos dias (lift {{ bh.rhythm.payday_lift|number(2) }}x).</p>
+  {{ chart.deposit_dom }}
+  <table class="t">
+    <tr><th>Dia da semana</th>{% for d in bh.rhythm.weekday %}<th class="n">{{ d.name }}</th>{% endfor %}</tr>
+    <tr><td>Depósitos</td>{% for d in bh.rhythm.weekday %}<td class="n">{{ d.deposits|money }}</td>{% endfor %}</tr>
+    <tr><td>Quantidade</td>{% for d in bh.rhythm.weekday %}<td class="n">{{ d.deposits_n|number }}</td>{% endfor %}</tr>
+  </table>
+  {% endif %}
+  {% if bh.rhythm.time_to_ftd %}
+  <h3>Tempo do cadastro ao primeiro depósito (cadastros do período)</h3>
+  <table class="t"><tr>{% for b in bh.rhythm.time_to_ftd %}<th class="n">{{ b.bucket }}</th>{% endfor %}</tr>
+    <tr>{% for b in bh.rhythm.time_to_ftd %}<td class="n">{{ b.players|number }} ({{ b.share|percent(0) }})</td>{% endfor %}</tr></table>
+  {% endif %}
+
+  {% elif s == 'providers' %}
+  {% set pv = r.providers %}
+  <h2 id="providers">{{ cfg.providers.title }}</h2>
+  <p class="lead">Participação no turnover · HHI {{ pv.hhi|number }} (&gt; 2.500 = alta concentração).</p>
+  {{ chart.providers }}
+  <table class="t">
+    <tr><th>Provider</th><th class="n">Players</th><th class="n">Turnover</th><th class="n">Share</th><th class="n">GGR</th><th class="n">Hold</th><th class="n">Desvio hold</th></tr>
+    {% for p in pv.providers %}
+    <tr{% if p.hold_flag %} class="hl"{% endif %}><td>{{ p.provider_name }}</td><td class="n">{{ p.players|number }}</td>
+      <td class="n">{{ p.turnover|money }}</td><td class="n">{{ p.turnover_share|percent }}</td><td class="n">{{ p.ggr|money }}</td>
+      <td class="n">{{ p.hold|percent }}</td><td class="n">{{ p.hold_deviation|pp }}</td></tr>
+    {% endfor %}
+  </table>
+  {{ miudos('providers') }}
+  {{ insights_for('providers') }}
+
+  {% elif s == 'players' %}
+  {% set pr = r.players %}
+  <h2 id="players">{{ cfg.players.title }}</h2>
+  <p class="lead">Score = soma dos pesos das flags. Faixas: alto ≥ {{ e.rules.risk_tiers.alto }}, médio ≥ {{ e.rules.risk_tiers.medio }}, baixo ≥ {{ e.rules.risk_tiers.baixo }}.</p>
+  {{ chart.tiers }}
+  <table class="t">
+    <tr><th>Concentração</th><th class="n">Valor</th></tr>
+    <tr><td>Top 10 players — share do turnover</td><td class="n">{{ pr.concentration.top10_turnover_share|percent }}</td></tr>
+    <tr><td>Top 1% players — share do turnover</td><td class="n">{{ pr.concentration.top1pct_turnover_share|percent }}</td></tr>
+    <tr><td>Gini do turnover (0 = igual, 1 = concentrado)</td><td class="n">{{ pr.concentration.gini_turnover|number(3) }}</td></tr>
+  </table>
+  <h3>Flags disparadas</h3>
+  <table class="t">
+    <tr><th>Flag</th><th class="n">Peso</th><th class="n">Players</th><th class="n">Turnover</th><th class="n">Ganho líq. players</th><th>Regra</th></tr>
+    {% for f in pr.flag_counts %}
+    <tr><td><b>{{ f.flag }}</b></td><td class="n">{{ f.weight }}</td><td class="n">{{ f.players|number }}</td>
+      <td class="n">{{ f.turnover|money }}</td><td class="n">{{ f.player_net|money }}</td><td class="small">{{ f.description }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if not pr.payments_used %}<p class="small">Flags de pagamento (WITHDRAWAL_GT_DEPOSIT, LOW_WAGER_CASHOUT, FAST_CASHOUT) exigem payments.csv.</p>{% endif %}
+  {{ miudos('players') }}
+  {{ insights_for('players') }}
+  <h3>Players sinalizados (score ≥ {{ pr.flagged_threshold }}) — {{ pr.flagged|length }} no total{% if pr.flagged|length > 50 %}, top 50 abaixo (lista completa em tables/players_flagged.csv){% endif %}</h3>
+  {% if pr.flagged %}
+  <table class="t">
+    <tr><th>Pseudônimo</th><th class="n">Score</th><th>Flags</th><th class="n">Dias</th><th class="n">Turnover</th><th class="n">GGR</th><th class="n">Hold</th><th class="n">Depósitos</th><th class="n">Saques</th></tr>
+    {% for p in pr.flagged[:50] %}
+    <tr{% if p.risk_tier == 'alto' %} class="hl"{% endif %}><td><code>{{ p.player_id }}</code></td><td class="n">{{ p.risk_score }}</td><td class="small">{{ p.flags }}</td>
+      <td class="n">{{ p.active_days }}</td><td class="n">{{ p.turnover|money }}</td><td class="n">{{ p.ggr|money }}</td>
+      <td class="n">{{ p.hold|percent }}</td><td class="n">{{ p.deposits|money }}</td><td class="n">{{ p.withdrawals|money }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="small">Nenhum player atingiu o limiar.</p>{% endif %}
+  <h3>Maior exposição da casa (top 20 por ganho líquido do player)</h3>
+  <table class="t">
+    <tr><th>Pseudônimo</th><th class="n">Ganho líquido</th><th class="n">Turnover</th><th class="n">Hold</th><th class="n">Score</th><th>Flags</th></tr>
+    {% for p in pr.exposure_top %}
+    <tr><td><code>{{ p.player_id }}</code></td><td class="n">{{ p.player_net|money }}</td><td class="n">{{ p.turnover|money }}</td>
+      <td class="n">{{ p.hold|percent }}</td><td class="n">{{ p.risk_score }}</td><td class="small">{{ p.flags }}</td></tr>
+    {% endfor %}
+  </table>
+
+  {% elif s == 'affiliates' %}
+  {% set af = r.affiliates %}
+  <h2 id="affiliates">{{ cfg.affiliates.title }}</h2>
+  <p class="lead">Taxa geral de players sinalizados: {{ af.overall_flagged_rate|percent }}. Multiplicador = taxa da btag ÷ taxa geral.</p>
+  <table class="t">
+    <tr><th>btag</th><th class="n">Players</th><th class="n">Turnover</th><th class="n">Share</th><th class="n">GGR</th><th class="n">Hold</th><th class="n">Sinalizados</th><th class="n">Mult.</th></tr>
+    {% for a in af.affiliates[:40] %}
+    <tr{% if a.risk_flag %} class="hl"{% endif %}><td>{{ a.btag }}</td><td class="n">{{ a.players|number }}</td><td class="n">{{ a.turnover|money }}</td>
+      <td class="n">{{ a.turnover_share|percent }}</td><td class="n">{{ a.ggr|money }}</td><td class="n">{{ a.hold|percent }}</td>
+      <td class="n">{{ a.flagged_players|number }} ({{ a.flagged_rate|percent }})</td><td class="n">{{ a.risk_multiplier|number(1) }}x</td></tr>
+    {% endfor %}
+  </table>
+  {{ miudos('affiliates') }}
+  {{ insights_for('affiliates') }}
+
+  {% elif s == 'games' and r.games %}
+  {% set gm = r.games %}
+  <h2 id="games">{{ cfg.games.title }}</h2>
+  <p class="lead">Fonte: <b>{{ gm.source }}</b> · modo: <b>{{ 'métricas por jogo' if gm.mode == 'metrics' else 'apenas aparições' }}</b>
+    {% if gm.coverage_vs_activity is not none %} · cobertura do turnover da atividade: {{ gm.coverage_vs_activity|percent }}{% endif %}</p>
+  <table class="t">
+    <tr><th>Jogo</th><th>Provider</th><th class="n">Players</th>{% if gm.mode == 'metrics' %}<th class="n">Turnover</th><th class="n">Share</th><th class="n">GGR</th><th class="n">Hold</th><th class="n">EP</th><th class="n">z faixa</th>{% else %}<th class="n">Aparições</th>{% endif %}</tr>
+    {% for g in gm.games[:40] %}
+    <tr{% if g.hold_flag %} class="hl"{% elif g.hold_watch %} class="watch"{% endif %}><td>{{ g.game_name }}{% if g.hold_watch %} <span class="sev sev-atencao">observação</span>{% endif %}</td><td class="small">{{ g.providers }}</td><td class="n">{{ g.players|number }}</td>
+      {% if gm.mode == 'metrics' %}<td class="n">{{ g.turnover|money }}</td><td class="n">{{ g.turnover_share|percent }}</td><td class="n">{{ g.ggr|money }}</td>
+      <td class="n">{{ g.hold|percent }}</td><td class="n">{{ g.hold_se|percent if g.hold_se else '–' }}</td><td class="n">{{ g.band_z|number(2) }}</td>{% else %}<td class="n">{{ g.appearances|number }}</td>{% endif %}</tr>
+    {% endfor %}
+  </table>
+  {% if gm.mode == 'metrics' and gm.hold_stats.reference_median is not none %}
+  <p class="small">Teste estatístico: hold de cada jogo vs. faixa plausível {{ gm.hold_stats.reference_median|percent }} ± {{ gm.hold_stats.tolerance|percent(0) }}
+    (mediana dos jogos ± diferença normal de RTP). EP = erro-padrão do hold (estimador de razão, agrupado por player — robusto a whales).
+    "z faixa" = distância além da faixa em erros-padrão: ≥ {{ gm.hold_stats.alert_z }} alerta, ≥ {{ gm.hold_stats.watch_z }} observação.
+    Jogos com menos de {{ gm.hold_stats.min_clusters }} players não são testados.</p>
+  {% endif %}
+  {{ miudos('games') }}
+  {{ insights_for('games') }}
+
+  {% elif s == 'payments' and r.payments %}
+  {% set pm = r.payments.metrics %}
+  <h2 id="payments">{{ cfg.payments.title }}</h2>
+  <p class="lead">Somente transações aprovadas entram nos valores. Barras = depósito líquido diário.</p>
+  {{ chart.payments_net }}
+  <table class="t">
+    <tr><th>Indicador</th><th class="n">Valor</th><th>Indicador</th><th class="n">Valor</th></tr>
+    <tr><td>Depósitos</td><td class="n">{{ pm.deposits|money }}</td><td>Saques</td><td class="n">{{ pm.withdrawals|money }}</td></tr>
+    <tr><td>Depósito líquido</td><td class="n">{{ pm.net_deposits|money }}</td><td>Saques ÷ depósitos</td><td class="n">{{ pm.withdrawal_to_deposit|percent }}</td></tr>
+    <tr><td>Depositantes</td><td class="n">{{ pm.depositors|number }}</td><td>Sacadores</td><td class="n">{{ pm.withdrawers|number }}</td></tr>
+    <tr><td>Depósito médio</td><td class="n">{{ pm.avg_deposit|money }}</td><td>FTDs (valor)</td><td class="n">{{ pm.ftd_players|number }} ({{ pm.ftd_amount|money }})</td></tr>
+    <tr><td>Aprovação depósitos</td><td class="n">{{ pm.deposit_approval_rate|percent }}</td><td>Aprovação saques</td><td class="n">{{ pm.withdrawal_approval_rate|percent }}</td></tr>
+    <tr><td>Pendentes</td><td class="n">{{ pm.pending|number }}</td><td>Pagaram sem jogar cassino</td><td class="n">{{ pm.players_paying_without_activity|number }}</td></tr>
+  </table>
+  {{ miudos('payments') }}
+  {{ insights_for('payments') }}
+
+  {% elif s == 'clients' and r.clients %}
+  {% set cm = r.clients.metrics %}
+  <h2 id="clients">{{ cfg.clients.title }}</h2>
+  <p class="lead">{{ cm.signups|number }} cadastros no período (de {{ cm.total_clients_in_file|number }} no arquivo).</p>
+  <table class="t">
+    <tr><th>Indicador</th><th class="n">Valor</th></tr>
+    <tr><td>Cadastros no período</td><td class="n">{{ cm.signups|number }}</td></tr>
+    <tr><td>Converteram em FTD</td><td class="n">{{ cm.ftd|number }} ({{ cm.ftd_rate|percent }})</td></tr>
+    <tr><td>Jogaram cassino no período</td><td class="n">{{ cm.active|number }} ({{ cm.active_rate|percent }})</td></tr>
+  </table>
+  <h3>KYC dos cadastros</h3>
+  <table class="t"><tr><th>Status KYC</th><th class="n">Players</th><th class="n">Share</th></tr>
+    {% for k in r.clients.kyc %}<tr><td>{{ k.kyc_status }}</td><td class="n">{{ k.players|number }}</td><td class="n">{{ k.share|percent }}</td></tr>{% endfor %}
+  </table>
+  <h3>Conversão por btag de cadastro</h3>
+  <table class="t"><tr><th>btag</th><th class="n">Cadastros</th><th class="n">FTD</th><th class="n">Taxa FTD</th><th class="n">Ativos</th><th class="n">Taxa ativos</th></tr>
+    {% for b in r.clients.by_btag[:30] %}<tr><td>{{ b.btag }}</td><td class="n">{{ b.signups|number }}</td><td class="n">{{ b.ftd|number }}</td>
+      <td class="n">{{ b.ftd_rate|percent }}</td><td class="n">{{ b.active|number }}</td><td class="n">{{ b.active_rate|percent }}</td></tr>{% endfor %}
+  </table>
+  {{ miudos('clients') }}
+  {{ insights_for('clients') }}
+
+  {% elif s == 'data_quality' %}
+  <h2 id="data_quality">{{ cfg.data_quality.title }}</h2>
+  <p class="lead">Contratos aplicados a cada CSV e reconciliação dos totais.</p>
+  <h3>Contratos por arquivo</h3>
+  <table class="t">
+    <tr><th>Dataset</th><th>Status</th><th class="n">Linhas</th><th class="n">Carregadas</th><th class="n">Removidas</th><th>Separadores</th><th>SHA-256</th></tr>
+    {% for name, ds in e.datasets.items() %}
+    <tr><td><b>{{ name }}</b><br><span class="small">{{ ds.path.split('/')[-1] }}</span></td><td><span class="st st-{{ ds.status.split(' ')[0] }}">{{ ds.status }}</span></td>
+      <td class="n">{{ ds.rows_raw|number }}</td><td class="n">{{ ds.rows_loaded|number }}</td><td class="n">{{ ds.rows_dropped|number }}</td>
+      <td class="small">campo "{{ ds.delimiter }}" · decimal "{{ ds.decimal_separator }}"{% if ds.pii_discarded %}<br><b>PII descartada:</b> {{ ds.pii_discarded|join(', ') }}{% endif %}</td><td><code>{{ ds.sha256[:16] }}…</code></td></tr>
+    {% endfor %}
+  </table>
+  {% for name, ds in e.datasets.items() if ds.issues %}
+  <h3>Ocorrências — {{ name }}</h3>
+  <table class="t"><tr><th>Checagem</th><th>Severidade</th><th class="n">Linhas</th><th>Descrição</th><th>Exemplos</th></tr>
+    {% for i in ds.issues %}<tr><td><code>{{ i.check_id }}</code></td><td><span class="sev sev-{{ 'alerta' if i.severity == 'error' else 'atencao' }}">{{ i.severity }}</span></td>
+      <td class="n">{{ i.count|number }}</td><td>{{ i.description }}</td><td class="small">{{ i.examples|join('; ') }}</td></tr>{% endfor %}
+  </table>
+  {% endfor %}
+  <h3>Reconciliação</h3>
+  <table class="t">
+    <tr><th>ID</th><th>Checagem</th><th>Status</th><th class="n">Esperado</th><th class="n">Obtido</th><th>Detalhe</th></tr>
+    {% for c in e.checks %}
+    <tr{% if c.status == 'FALHA' %} class="hl"{% endif %}><td><code>{{ c.id }}</code></td><td>{{ c.description }}</td><td><span class="st st-{{ c.status }}">{{ c.status }}</span></td>
+      <td class="n">{{ c.expected|number if c.expected is not none else '' }}</td><td class="n">{{ c.actual|number if c.actual is not none else '' }}</td><td class="small">{{ c.detail }}</td></tr>
+    {% endfor %}
+  </table>
+  {{ miudos('data_quality') }}
+  {{ insights_for('data_quality') }}
+  {% endif %}
+{% endfor %}
+
+  <h2 id="glossario">Glossário</h2>
+  <table class="t">
+    <tr><td><b>Turnover</b></td><td>Valor total apostado.</td></tr>
+    <tr><td><b>GGR</b></td><td>Gross Gaming Revenue = apostado − pago aos players. Positivo = casa ganhou.</td></tr>
+    <tr><td><b>Hold</b></td><td>GGR ÷ turnover. Margem efetiva da casa.</td></tr>
+    <tr><td><b>Ganho líquido do player</b></td><td>−GGR do player. Positivo = o player ganhou da casa.</td></tr>
+    <tr><td><b>btag</b></td><td>Identificador do afiliado/canal de aquisição.</td></tr>
+    <tr><td><b>HHI</b></td><td>Índice Herfindahl-Hirschman: soma dos quadrados das participações (0–10.000).</td></tr>
+    <tr><td><b>z robusto</b></td><td>0,6745 × (x − mediana) ÷ MAD. |z| ≥ 3,5 = outlier (Iglewicz &amp; Hoaglin). Não é distorcido por extremos.</td></tr>
+    <tr><td><b>Gini</b></td><td>Desigualdade da distribuição do turnover entre players (0 = igual, 1 = um player concentra tudo).</td></tr>
+    <tr><td><b>FTD</b></td><td>First Time Deposit: primeiro depósito aprovado do player presente no arquivo.</td></tr>
+    <tr><td><b>Pseudônimo</b></td><td>Hash com chave local do player_id. Reversível somente na máquina que tem a chave (comando <code>sentinela lookup</code>).</td></tr>
+  </table>
+
+  <h2 id="metodologia">Metodologia e auditoria</h2>
+  <table class="t">
+    <tr><td>Motor</td><td>DuckDB (aritmética DECIMAL exata para dinheiro) + Python Decimal para razões. Sem IA.</td></tr>
+    <tr><td>Run ID</td><td><code>{{ m.run_id }}</code> — hash de (versão, estudo, contratos, regras, CSVs). Mesmo Run ID = mesmos números.</td></tr>
+    <tr><td>Estudo</td><td>{{ m.study_file }} · <code>{{ m.study_sha256[:16] }}…</code></td></tr>
+    <tr><td>Contratos</td><td>v{{ m.contracts_version }} · <code>{{ m.contracts_sha256[:16] }}…</code></td></tr>
+    <tr><td>Regras</td><td>v{{ m.rules_version }} · <code>{{ m.rules_sha256[:16] }}…</code></td></tr>
+    <tr><td>Comportamento</td><td>v{{ m.behavior_version }} · <code>{{ m.behavior_sha256[:16] }}…</code> (behavior.yaml: estágios, faixas, segmentos)</td></tr>
+    <tr><td>Privacidade</td><td>{{ m.pseudonymization }}</td></tr>
+    {% if m.encryption %}<tr><td>Criptografia</td><td>entradas: {{ m.encryption.inputs }} · relatório: {{ m.encryption.outputs }} · área de trabalho: {{ m.encryption.workspace }}</td></tr>{% endif %}
+    {% if r.players %}
+    <tr><td>Parâmetros de risco usados</td><td class="small">
+      mediana hold {{ r.players.params.hold_median }} · MAD hold {{ r.players.params.hold_mad }} ·
+      mediana ln(aposta) {{ r.players.params.logbet_median }} · MAD {{ r.players.params.logbet_mad }} ·
+      piso exposição {{ r.players.params.exposure_floor|money }} · p90 turnover {{ r.players.params.q_turnover|money }} ·
+      elegíveis p/ hold {{ r.players.params.hold_eligible_players|number }} de {{ r.players.params.active_players|number }} players ativos</td></tr>
+    {% endif %}
+    {% for n in e.notes %}<tr><td>Nota</td><td>{{ n }}</td></tr>{% endfor %}
+    <tr><td>Limitações</td><td>Resultados refletem exclusivamente os CSVs fornecidos. Flags são indícios estatísticos e exigem análise humana antes de qualquer ação sobre um player.</td></tr>
+  </table>
+  <p class="small">Sentinela Risk Lab v{{ m.version }} · relatório gerado localmente em {{ m.generated_at }}.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+# Report sections and their narrative reading ("Em miúdos").
+# Narrative text here is FIXED editorial guidance written by humans; the
+# numbers that fill the report come exclusively from the computation engine.
+
+sections:
+  executive:
+    title: Resumo Executivo
+    needs: [activity]
+    read_as: "O pulso da operação no período. Hold é o KPI-mestre da margem."
+    em_miudos: "Hold positivo é esperado; o que importa é a tendência e a eficiência (GGR médio diário)."
+  behavior:
+    title: Comportamento de Players
+    needs: [activity]
+    read_as: "Quem são os players, em que estágio estão e quanto valem — a base para CRM e retenção."
+    em_miudos: "Estágios, faixas e segmentos seguem as definições de behavior.yaml (editáveis). Valor alto esfriando é a receita em risco mais urgente."
+  providers:
+    title: Receita e Providers
+    needs: [activity]
+    read_as: "Concentração de receita por provider = risco de dependência."
+    em_miudos: "Fatia alta do provider líder eleva risco operacional/regulatório. Hold fora da média pede auditoria."
+  players:
+    title: Risco por Player
+    needs: [activity]
+    read_as: "Exposição concentrada em poucos players = volatilidade de receita e risco de jogo responsável."
+    em_miudos: "Flags são sinais estatísticos para investigação, não prova de fraude. IDs pseudonimizados."
+  affiliates:
+    title: Aquisição e Afiliados
+    needs: [activity]
+    read_as: "Qualidade de tráfego por canal (btag)."
+    em_miudos: "Volume alto + hold baixo ou concentração de players sinalizados = tráfego que pode não compensar o CAC."
+  games:
+    title: Jogos
+    needs: [games_or_top_jogos]
+    read_as: "Jogos vitrine (engajam, margem fina) vs. jogos de margem."
+    em_miudos: "Hold muito fora do padrão do jogo pede verificação de configuração/RTP."
+  payments:
+    title: Financeiro
+    needs: [payments]
+    read_as: "Fluxo de caixa dos players: depósitos, saques e taxa de aprovação."
+    em_miudos: "Saques próximos dos depósitos comprimem o caixa; aprovação baixa indica fricção no meio de pagamento."
+  clients:
+    title: CRM e Clientes
+    needs: [clients]
+    read_as: "Cadastros, KYC e conversão para depósito/atividade."
+    em_miudos: "Conversão cadastro→FTD é a eficiência real da aquisição."
+  data_quality:
+    title: Qualidade dos Dados e Reconciliação
+    needs: [activity]
+    read_as: "Prova de que os números fecham antes de qualquer conclusão."
+    em_miudos: "Toda checagem com status FALHA invalida conclusões da seção afetada."
